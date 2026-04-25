@@ -48,30 +48,62 @@ init_db()
 # 2. GAME DATA & CONSTANTS
 # =====================
 POKEMON_DB = {
+    # --- COMMON (Hutan & Kota) ---
     "caterpie": {"hp": 40, "atk": 5, "emoji": "🐛", "color": 0x2ecc71},
     "weedle": {"hp": 40, "atk": 6, "emoji": "🐛", "color": 0x2ecc71},
+    "pidgey": {"hp": 55, "atk": 8, "emoji": "🐦", "color": 0x95a5a6},
+    "rattata": {"hp": 45, "atk": 9, "emoji": "🐀", "color": 0x9b59b6},
+    "ekans": {"hp": 60, "atk": 12, "emoji": "🐍", "color": 0x8e44ad},
+    "nidoran": {"hp": 65, "atk": 11, "emoji": "🐰", "color": 0x9b59b6},
+    "jigglypuff": {"hp": 110, "atk": 7, "emoji": "🎈", "color": 0xffc0cb},
+
+    # --- STARTERS & ELECTRIC ---
+    "bulbasaur": {"hp": 110, "atk": 18, "emoji": "🍃", "color": 0x2ecc71},
+    "charmander": {"hp": 105, "atk": 22, "emoji": "🔥", "color": 0xe67e22},
+    "squirtle": {"hp": 115, "atk": 17, "emoji": "💧", "color": 0x3498db},
     "pikachu": {"hp": 80, "atk": 15, "emoji": "⚡", "color": 0xf1c40f},
+    "voltorb": {"hp": 70, "atk": 14, "emoji": "🔴", "color": 0xe74c3c},
+
+    # --- CAVE & ROCK (Gunung/Goa) ---
     "geodude": {"hp": 100, "atk": 12, "emoji": "🪨", "color": 0x95a5a6},
     "zubat": {"hp": 50, "atk": 10, "emoji": "🦇", "color": 0x9b59b6},
+    "onix": {"hp": 150, "atk": 15, "emoji": "🐍", "color": 0x7f8c8d},
+    "machop": {"hp": 90, "atk": 20, "emoji": "💪", "color": 0xbdc3c7},
+    "sandshrew": {"hp": 85, "atk": 14, "emoji": "🦎", "color": 0xd4ac0d},
+    "diglett": {"hp": 40, "atk": 18, "emoji": "🥔", "color": 0x873600},
+
+    # --- WATER (Lautan/Sungai) ---
     "magikarp": {"hp": 30, "atk": 2, "emoji": "🐟", "color": 0x3498db},
-    "bulbasaur": {"hp": 110, "atk": 18, "emoji": "🍃", "color": 0x2ecc71},
-    "squirtle": {"hp": 115, "atk": 17, "emoji": "💧", "color": 0x3498db},
-    "charmander": {"hp": 105, "atk": 22, "emoji": "🔥", "color": 0xe67e22}
+    "psyduck": {"hp": 75, "atk": 13, "emoji": "🦆", "color": 0xf4d03f},
+    "staryu": {"hp": 65, "atk": 16, "emoji": "⭐", "color": 0x5dade2},
+    "tentacool": {"hp": 80, "atk": 14, "emoji": "🦑", "color": 0x2471a3},
+    "krabby": {"hp": 55, "atk": 22, "emoji": "🦀", "color": 0xe67e22},
+    "lapras": {"hp": 180, "atk": 25, "emoji": "🦕", "color": 0x5dade2},
+
+    # --- UNCOMMON & MYSTERIOUS ---
+    "abra": {"hp": 45, "atk": 25, "emoji": "🔮", "color": 0xf4d03f},
+    "gastly": {"hp": 50, "atk": 22, "emoji": "👻", "color": 0x6c3483},
+    "meowth": {"hp": 70, "atk": 12, "emoji": "🐱", "color": 0xf7dc6f},
+    "growlithe": {"hp": 95, "atk": 20, "emoji": "🐕", "color": 0xd35400},
+    "scyther": {"hp": 120, "atk": 28, "emoji": "🗡️", "color": 0x27ae60},
+    "eevee": {"hp": 85, "atk": 15, "emoji": "🦊", "color": 0xa04000},
+    "snorlax": {"hp": 250, "atk": 20, "emoji": "💤", "color": 0x2e4053},
+    "gyarados": {"hp": 190, "atk": 35, "emoji": "🐉", "color": 0x1f618d}
 }
 
 # Lokasi map dengan terrain visual dan peluang muncul (weight)
 LOCATIONS = {
     "Viridian Forest": {
         "color": 0x2ecc71, "bg": "🌿🌳🌿", 
-        "mobs": [("caterpie", 45), ("weedle", 45), ("pikachu", 10)] 
+        "mobs": [("caterpie", 30), ("weedle", 30), ("pidgey", 20), ("bulbasaur", 10), ("scyther", 10)] 
     },
     "Mt. Moon": {
         "color": 0x7f8c8d, "bg": "🧱🌑🧱", 
-        "mobs": [("geodude", 60), ("zubat", 40)]
+        "mobs": [("geodude", 30), ("zubat", 30), ("onix", 10), ("machop", 15), ("abra", 15)]
     },
     "Sea Route": {
         "color": 0x3498db, "bg": "🌊🌊🌊", 
-        "mobs": [("magikarp", 90), ("pikachu", 10)]
+        "mobs": [("magikarp", 40), ("psyduck", 20), ("staryu", 20), ("lapras", 5), ("gyarados", 15)]
     }
 }
 
@@ -284,16 +316,24 @@ class BattleView(View):
     @discord.ui.button(label="Power Up", style=discord.ButtonStyle.success, emoji="💊")
     async def powerup(self, interaction: discord.Interaction, btn: Button):
         if interaction.user.id != self.ctx.author.id: return
+        
+        # CEK: Jika HP sudah penuh, jangan gunakan potion
+        if self.p_hp >= self.p_max:
+            return await interaction.response.send_message("❤️ HP kamu sudah penuh!", ephemeral=True)
+
         with sqlite3.connect(config.DATABASE) as conn:
             res = conn.execute("SELECT quantity FROM inventory WHERE user_id=? AND item_name='potion'", (str(self.ctx.author.id),)).fetchone()
         
         if not res or res[0] <= 0:
             return await interaction.response.send_message("❌ Kamu tidak punya Potion!", ephemeral=True)
         
+        # Gunakan potion (maksimal sampai self.p_max)
         self.p_hp = min(self.p_max, self.p_hp + 40)
+        
         with sqlite3.connect(config.DATABASE) as conn:
             conn.execute("UPDATE inventory SET quantity = quantity - 1 WHERE user_id=? AND item_name='potion'", (str(self.ctx.author.id),))
         
+        # Musuh tetap menyerang setelah kamu heal
         edmg = random.randint(self.e_atk, self.e_atk+2)
         self.p_hp = max(0, self.p_hp - edmg)
         await interaction.response.edit_message(embed=self.make_embed(f"💊 Pakai Potion (+40 HP)! Musuh tetap menyerang {edmg} DMG."), view=self)
@@ -431,25 +471,39 @@ async def shop(ctx):
 async def use(ctx, item_name: str):
     uid = str(ctx.author.id)
     item_name = item_name.lower().replace(" ", "_")
+    
     with sqlite3.connect(config.DATABASE) as conn:
         res = conn.execute("SELECT quantity FROM inventory WHERE user_id=? AND item_name=?", (uid, item_name)).fetchone()
     
-    if not res or res[0] <= 0: return await ctx.send("❌ Kamu tidak punya item ini!")
+    if not res or res[0] <= 0: 
+        return await ctx.send("❌ Kamu tidak punya item ini!")
 
     u = get_user(uid)
+    msg = ""
+
     if item_name == "energy_drink":
+        # CEK: Jika energi sudah 10 atau lebih, jangan gunakan
+        if u[5] >= 10:
+            return await ctx.send("⚡ Energimu sudah penuh (10/10)!")
+        
         new_en = min(10, u[5] + 5)
         update_user(uid, "energy", new_en)
         msg = f"⚡ Energi bertambah! Sekarang: **{new_en}/10**"
+
     elif item_name == "rare_candy":
         update_user(uid, "level", u[4] + 1)
         msg = f"🍬 Level naik ke **{u[4]+1}**!"
-    elif item_name == "potion":
-        msg = "💖 Pokemon kamu membaik! (Disarankan pakai ini via tombol di dalam pertempuran)."
-    else: return await ctx.send("❌ Item ini tidak bisa digunakan di luar pertempuran.")
 
+    elif item_name == "potion":
+        return await ctx.send("💖 Gunakan Potion saat sedang `!hunt` melalui tombol yang tersedia!")
+
+    else: 
+        return await ctx.send("❌ Item ini tidak bisa digunakan di luar pertempuran.")
+
+    # Bagian ini hanya jalan jika item berhasil digunakan (tidak terkena return di atas)
     with sqlite3.connect(config.DATABASE) as conn:
         conn.execute("UPDATE inventory SET quantity = quantity - 1 WHERE user_id=? AND item_name=?", (uid, item_name))
+    
     await ctx.send(f"✅ Berhasil menggunakan **{item_name.replace('_',' ')}**!\n{msg}")
 
 @bot.command()
