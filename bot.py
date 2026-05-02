@@ -195,7 +195,7 @@ class StarterSelection(View):
         # Hapus tombol dan berikan pesan sukses
         await interaction.response.edit_message(
             content=f"🎊 Selamat! Kamu telah memilih **{pokemon.upper()}** sebagai partner pertamamu!",
-            embed=None,
+            embed=None, 
             view=None
         )
 
@@ -388,7 +388,8 @@ async def help(ctx):
         name="⚔️ PETUALANGAN & PERTEMPURAN",
         value=(
             "`!hunt` : Cari Pokemon liar! Menang akan memberi **XP**, **Coins**, dan entri **Pokedex**.\n"
-            "`!raid` : Serang Boss Global bersama-sama pemain lain di server ini."
+            "`!raid` : Serang Boss Global bersama-sama pemain lain di server ini.\n"
+            "`!leaderboard` : Lihat peringkat trainer terbaik di server."
         ),
         inline=False
     )
@@ -444,6 +445,34 @@ async def pokedex(ctx):
         msg += f"{status}\n"
     
     emb = discord.Embed(title=f"📖 Pokedex: {ctx.author.name}", description=f"Koleksi: {len(discovered)}/{len(POKEMON_DB)}\n\n{msg}", color=0xe74c3c)
+    await ctx.send(embed=emb)
+
+@bot.command()
+async def leaderboard(ctx):
+    with sqlite3.connect(config.DATABASE) as conn:
+        cursor = conn.cursor()
+        # Ambil top 10 berdasarkan level & xp
+        cursor.execute("""
+            SELECT user_id, level, xp, pokecoins 
+            FROM users 
+            ORDER BY level DESC, xp DESC 
+            LIMIT 10
+        """)
+        data = cursor.fetchall()
+
+    if not data:
+        return await ctx.send("❌ Belum ada data leaderboard.")
+
+    desc = ""
+    for i, (uid, level, xp, coins) in enumerate(data, start=1):
+        user = await bot.fetch_user(int(uid))
+        desc += f"**#{i}** {user.name} | ⭐ Lv {level} | XP {xp} | 💰 {coins}\n"
+
+    emb = discord.Embed(
+        title="🏆 LEADERBOARD TRAINER",
+        description=desc,
+        color=0xf1c40f
+    )
     await ctx.send(embed=emb)
 
 @bot.command()
